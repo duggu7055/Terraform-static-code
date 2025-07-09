@@ -1,4 +1,4 @@
-aws_region = "ap-northeast-1"
+aws_region = "ap-south-1"
 
 vpc_cidr   = "10.0.0.0/25"
 vpc_name   = "otms-vpc"
