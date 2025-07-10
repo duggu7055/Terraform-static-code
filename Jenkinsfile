@@ -12,7 +12,7 @@ node {
     def terraformDirectory = 'Network-skelton/VPC'
 
     // Instantiate and use the shared class
-    def terraformPipeline = new Terraform()
+    def terraformPipeline = new Terraform1()
 
     terraformPipeline.call(
         env.GIT_REPO_URL,
