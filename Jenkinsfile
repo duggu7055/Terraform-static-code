@@ -1,4 +1,4 @@
-@Library('your-shared-library') _  // Replace with the actual name of your Jenkins shared library
+@Library('shared-library') _  // Replace with the actual name of your Jenkins shared library
 
 node {
     properties([
