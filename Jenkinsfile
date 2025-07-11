@@ -1,5 +1,5 @@
 @Library('shared-library') _
-import org.downtime.Wrapper
+import org.downtimecrew.Wrapper
 
 def wrapper = new Wrapper(this)
 
