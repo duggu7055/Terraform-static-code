@@ -1,7 +1,4 @@
 @Library('shared-library') _
-import org.downtimecrew.Wrapper
-
-def tf = new Wrapper(this)
 
 pipeline {
     agent any
@@ -23,8 +20,14 @@ pipeline {
 
         stage('Terraform Actions') {
             steps {
-                withCredentials([usernamePassword(credentialsId: 'aws-keys', usernameVariable: 'AWS_ACCESS_KEY_ID', passwordVariable: 'AWS_SECRET_ACCESS_KEY')]) {
+                withCredentials([usernamePassword(
+                    credentialsId: 'aws-keys',
+                    usernameVariable: 'AWS_ACCESS_KEY_ID',
+                    passwordVariable: 'AWS_SECRET_ACCESS_KEY'
+                )]) {
                     script {
+                        def tf = new org.downtimecrew.Wrapper(this)
+
                         tf.init()
                         tf.validate()
                         tf.plan()
@@ -45,10 +48,10 @@ pipeline {
 
     post {
         success {
-            echo "✅ Terraform pipeline completed successfully!"
+            echo "Terraform pipeline completed successfully!"
         }
         failure {
-            echo "❌ Terraform pipeline failed."
+            echo "Terraform pipeline failed."
         }
     }
 }
