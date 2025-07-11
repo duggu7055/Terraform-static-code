@@ -1,14 +1,13 @@
 @Library('shared-library') _
+import org.downtimecrew.Wrapper
+
+def tf = new Wrapper(this)
 
 pipeline {
     agent any
 
     parameters {
-        booleanParam(
-            name: 'DESTROY_INFRA',
-            defaultValue: false,
-            description: 'Check to destroy infrastructure'
-        )
+        booleanParam(name: 'DESTROY_INFRA', defaultValue: false, description: 'Check to destroy infrastructure')
     }
 
     environment {
@@ -24,27 +23,32 @@ pipeline {
 
         stage('Terraform Actions') {
             steps {
-                script {
-                    // Instantiate shared library class from src/org/downtimecrew/Wrapper.groovy
-                    def wrapper = new org.downtimecrew.Wrapper(this)
+                withCredentials([usernamePassword(credentialsId: 'aws-keys', usernameVariable: 'AWS_ACCESS_KEY_ID', passwordVariable: 'AWS_SECRET_ACCESS_KEY')]) {
+                    script {
+                        tf.init()
+                        tf.validate()
+                        tf.plan()
 
-                    wrapper.init()
-                    wrapper.validate()
-                    wrapper.plan()
-
-                    // Proceed only if working on main branch
-                    if (env.BRANCH_NAME == 'main' || env.GIT_BRANCH == 'main' || env.GIT_BRANCH == 'origin/main') {
-                        if (params.DESTROY_INFRA) {
-                            input message: 'Are you sure you want to destroy the infrastructure?'
-                            wrapper.destroy()
-                        } else {
-                            wrapper.applyTerraform()
+                        if (env.BRANCH_NAME == 'main' || env.GIT_BRANCH == 'main' || env.GIT_BRANCH == 'origin/main') {
+                            tf.apply()
                         }
-                    } else {
-                        echo "Skipping apply/destroy since branch is not 'main'"
+
+                        if (params.DESTROY_INFRA) {
+                            input message: "Are you sure you want to destroy the infrastructure?"
+                            tf.destroy()
+                        }
                     }
                 }
             }
+        }
+    }
+
+    post {
+        success {
+            echo "✅ Terraform pipeline completed successfully!"
+        }
+        failure {
+            echo "❌ Terraform pipeline failed."
         }
     }
 }
