@@ -1,29 +1,47 @@
-@Library('shared-library') _  // ✅ Use the correct library name from Jenkins
+@Library('shared-library') _
+import org.downtime.Wrapper
 
-import org.downtimecrew.template.terraformCD.Terraform  // ✅ Correct class import based on your structure
+def wrapper = new Wrapper(this)
 
-node {
-    // Set required environment variables
-    env.GIT_BRANCH     = 'main'
-    env.GIT_REPO_URL   = 'https://github.com/snaatak-Downtime-Crew/Terraform-static-code.git'
-    env.GIT_CREDS_ID   = 'downtime_github'
-    env.AWS_CRED_ID    = 'aws-central-account-creds'
-    env.TERRAFORM_DIR  = 'module/ec2'
-    env.VAR_FILE       = 'terraform.tfvars'
-    env.ACTION         = 'apply' // or 'destroy'
+pipeline {
+    agent any
 
-    stage('Run Terraform CD Template') {
-        script {
-            def pipeline = new Terraform()
-            pipeline.call([
-                gitBranch    : env.GIT_BRANCH,
-                gitRepoUrl   : env.GIT_REPO_URL,
-                gitCredsId   : env.GIT_CREDS_ID,
-                awsCredId    : env.AWS_CRED_ID,
-                terraformDir : env.TERRAFORM_DIR,
-                var_file     : env.VAR_FILE,
-                action       : env.ACTION
-            ])
+    parameters {
+        booleanParam(name: 'DESTROY_INFRA', defaultValue: false, description: 'Check to destroy infrastructure')
+    }
+
+    environment {
+        TF_IN_AUTOMATION = 'true'
+    }
+
+    stages {
+        stage('Debug Branch') {
+            steps {
+                echo "Branch Info - BRANCH_NAME: ${env.BRANCH_NAME}, GIT_BRANCH: ${env.GIT_BRANCH}"
+            }
+        }
+
+        stage('Terraform Actions') {
+            steps {
+                withCredentials([usernamePassword(credentialsId: 'aws-keys', usernameVariable: 'AWS_ACCESS_KEY_ID',
+                passwordVariable: 'AWS_SECRET_ACCESS_KEY')]) {
+
+                    wrapper.init()
+                    wrapper.validate()
+                    wrapper.plan()
+
+                    if (env.BRANCH_NAME == 'main' || env.GIT_BRANCH == 'main' || env.GIT_BRANCH == 'origin/main') {
+                        if (!params.DESTROY_INFRA) {
+                            wrapper.applyTerraform()
+                        }
+
+                        if (params.DESTROY_INFRA) {
+                            input message: 'Are you sure you want to destroy the infrastructure?'
+                            wrapper.destroy()
+                        }
+                    }
+                }
+            }
         }
     }
 }
