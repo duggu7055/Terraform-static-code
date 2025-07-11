@@ -1,7 +1,6 @@
 @Library('shared-library') _
-import org.downtimecrew.wrapper
 
-def wrapper = new Wrapper(this)
+def wrapper = new org.downtimecrew.Wrapper(this) // ✅ No import, full class path
 
 pipeline {
     agent any
@@ -23,9 +22,13 @@ pipeline {
 
         stage('Terraform Actions') {
             steps {
-                withCredentials([usernamePassword(credentialsId: 'aws-keys', usernameVariable: 'AWS_ACCESS_KEY_ID',
-                passwordVariable: 'AWS_SECRET_ACCESS_KEY')]) {
-
+                withCredentials([
+                    usernamePassword(
+                        credentialsId: 'aws-keys',
+                        usernameVariable: 'AWS_ACCESS_KEY_ID',
+                        passwordVariable: 'AWS_SECRET_ACCESS_KEY'
+                    )
+                ]) {
                     wrapper.init()
                     wrapper.validate()
                     wrapper.plan()
